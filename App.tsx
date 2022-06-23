@@ -1,3 +1,4 @@
+import { StatusBar } from 'expo-status-bar'
 import React from 'react'
 import { Dimensions, StyleSheet, View, Text } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
@@ -7,6 +8,7 @@ import Animated, {
   useDerivedValue,
   useSharedValue,
   withSpring,
+  withTiming,
 } from 'react-native-reanimated'
 import { ReText } from 'react-native-redash'
 
@@ -17,7 +19,7 @@ interface AnimatedPosition {
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SIZE = 80
-const STEPS = 10
+const STEPS = 20
 const STEP_WIDTH = SCREEN_WIDTH / STEPS
 const LINE_WIDTH = STEP_WIDTH
 
@@ -27,7 +29,7 @@ const useFollowAnimatedPosition = ({
   data,
 }: AnimatedPosition & { data: { value: number[] } }) => {
   const followX = useDerivedValue(() => {
-    return withSpring(x.value)
+    return x.value
   })
 
   const followY = useDerivedValue(() => {
@@ -60,8 +62,6 @@ export default function App() {
     () => [...new Array(STEPS)].map(() => Math.round(Math.random() * 100)),
     []
   )
-  console.log({ DATA })
-
   const animatedText = useSharedValue('Some Text')
   const context = useSharedValue({ x: 0, y: 0 })
   const translateX = useSharedValue(0)
@@ -90,6 +90,10 @@ export default function App() {
     x: translateX,
     y: translateY,
     data,
+  })
+
+  const tabGesture = Gesture.Tap().onTouchesDown((event) => {
+    translateX.value = withTiming(event.allTouches[0].absoluteX - 2 * STEP_WIDTH)
   })
 
   return (
@@ -122,7 +126,7 @@ export default function App() {
                 key={index + 'bar'}
                 style={{
                   height: (value / 100) * 400,
-                  width: STEP_WIDTH,
+                  width: STEP_WIDTH - 2,
                   backgroundColor: 'tomato',
                   borderWidth: 1,
                   borderColor: 'black',
@@ -130,8 +134,28 @@ export default function App() {
               />
             ))}
           </View>
-          <GestureDetector gesture={gesture}>
-            <Animated.View style={[styles.line, rBlueCircleStyle]} />
+          <GestureDetector gesture={tabGesture}>
+            <Animated.View
+              style={{
+                position: 'absolute',
+                width: SCREEN_WIDTH,
+                borderColor: 'green',
+                borderWidth: 1,
+                height: 400,
+              }}>
+              <GestureDetector gesture={gesture}>
+                <Animated.View
+                  style={{
+                    position: 'absolute',
+                    width: SCREEN_WIDTH,
+                    borderColor: 'green',
+                    borderWidth: 1,
+                    height: 400,
+                  }}>
+                  <Animated.View style={[styles.line, rBlueCircleStyle]} />
+                </Animated.View>
+              </GestureDetector>
+            </Animated.View>
           </GestureDetector>
         </View>
       </View>
