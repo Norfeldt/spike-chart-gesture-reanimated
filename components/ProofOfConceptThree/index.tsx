@@ -7,6 +7,7 @@ import Animated, {
   withSpring,
   useAnimatedStyle,
   withTiming,
+  withDelay,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 
@@ -47,9 +48,13 @@ export function ProofOfConceptThree() {
     }
   }, [])
 
-  const panGesture = Gesture.Pan().onUpdate((event) => {
-    positionX.value = event.absoluteX
-  })
+  const panGesture = Gesture.Pan()
+    .onUpdate((event) => {
+      positionX.value = event.absoluteX
+    })
+    .onFinalize((event) => {
+      positionX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
+    })
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
