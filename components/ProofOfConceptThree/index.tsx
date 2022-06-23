@@ -10,17 +10,15 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
+import Svg, { Polygon, Rect } from 'react-native-svg'
 
 const clamp = (value: number, min: number, max: number) => {
   'worklet'
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [
-  10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123,
-  45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89,
-  100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70,
-]
+const DATA = [...new Array(20)].map((_, index) => Math.round(Math.random() * 300 + 150))
+const DATA_MAX = Math.max(...DATA)
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const TEXT_HEIGHT = 20
@@ -29,7 +27,7 @@ const LINE_WIDTH = 2
 const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
 const GRAPH_HEIGHT = 200
 const STEP = SCREEN_WIDTH / COUNT
-const LINE_CIRCLE_RADIUS = 6
+const LINE_CIRCLE_RADIUS = 3
 const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
 
 const ThemedText = ({ children, style }: { children: string; style?: any }) => {
@@ -102,14 +100,48 @@ export function ProofOfConceptThree() {
               </Animated.View>
             )
           })}
+          <Svg
+            height={GRAPH_HEIGHT}
+            width={SCREEN_WIDTH}
+            style={{ position: 'absolute', zIndex: -1 }}>
+            <Polygon
+              points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
+                value: DATA[DATA.length - 1],
+              })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
+                value: DATA[0],
+              })}`}
+              fill="lime"
+              stroke="purple"
+              strokeWidth="1"
+            />
+          </Svg>
         </View>
-
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.slideView]}></Animated.View>
         </GestureDetector>
       </View>
     </GestureHandlerRootView>
   )
+}
+
+function getYPosition({
+  value,
+  maxValue = DATA_MAX,
+  height = GRAPH_HEIGHT,
+}: {
+  value: number
+  maxValue?: number
+  height?: number
+}) {
+  return height - (value / maxValue) * height + LINE_CIRCLE_DIAMETER
+}
+
+function drawSinglePoint(x: number, y: number) {
+  return ` ${x * STEP + STEP / 2},${getYPosition({ value: y })}`
+}
+
+function drawPoints(data: number[]) {
+  return data.reduce((acc, value, index) => `${acc} ${drawSinglePoint(index, value)}`, '').trim()
 }
 
 type Classes = {
@@ -158,6 +190,7 @@ const styles = StyleSheet.create<Classes>({
     borderRadius: LINE_CIRCLE_RADIUS,
     backgroundColor: 'black',
     alignSelf: 'center',
+    marginTop: LINE_CIRCLE_RADIUS / 2,
   },
   slideView: {
     backgroundColor: 'tomato',
