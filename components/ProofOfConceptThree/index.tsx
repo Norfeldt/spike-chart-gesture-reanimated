@@ -16,12 +16,15 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-// array of lenght 10 with values from 0 to 100
-const DATA = [10, 50, 123, 45, 67, 89, 100, 90, 80, 70]
+const DATA = [
+  10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123,
+  45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70, 10, 50, 123, 45, 67, 89,
+  100, 90, 80, 70, 10, 50, 123, 45, 67, 89, 100, 90, 80, 70,
+]
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const TEXT_HEIGHT = 20
-const COUNT = 10
+const COUNT = DATA.length
 const LINE_WIDTH = 2
 const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
 const GRAPH_HEIGHT = 200
