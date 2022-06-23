@@ -6,12 +6,17 @@ import Animated, {
   useSharedValue,
   withSpring,
   useAnimatedStyle,
+  withTiming,
 } from 'react-native-reanimated'
+import { LinearGradient } from 'expo-linear-gradient'
 
 const clamp = (value: number, min: number, max: number) => {
   'worklet'
   return Math.min(Math.max(value, min), max)
 }
+
+// array of lenght 10 with values from 0 to 100
+const DATA = [10, 50, 123, 45, 67, 89, 100, 90, 80, 70]
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const TEXT_HEIGHT = 20
@@ -20,6 +25,8 @@ const LINE_WIDTH = 2
 const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
 const GRAPH_HEIGHT = 200
 const STEP = SCREEN_WIDTH / COUNT
+const LINE_CIRCLE_RADIUS = 6
+const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
 
 const ThemedText = ({ children, style }: { children: string; style?: any }) => {
   return <Text style={[styles.labelText, style]}>{children}</Text>
@@ -49,21 +56,21 @@ export function ProofOfConceptThree() {
       <View style={styles.container}>
         <View style={styles.labelOuterView}>
           <Animated.View style={[styles.labelInnerView, rLabelInnerViewStyle]}>
-            {[...new Array(COUNT)].map((_, index) => (
-              <ThemedText key={index}>{`${index}`}</ThemedText>
+            {DATA.map((value, index) => (
+              <ThemedText key={index}>{`${value}`}</ThemedText>
             ))}
           </Animated.View>
         </View>
 
         <View style={[styles.linesView]}>
-          {[...new Array(COUNT)].map((_, i) => {
+          {DATA.map((value, i) => {
             const rLineStyle = useAnimatedStyle(() => {
               return {
-                opacity: i === index.value ? 1 : 0,
+                opacity: withTiming(i === index.value ? 1 : 0),
               }
             }, [])
 
-            const lineHeight = GRAPH_HEIGHT - ((COUNT - i) / COUNT) * GRAPH_HEIGHT
+            const lineHeight = (value / Math.max(...DATA)) * GRAPH_HEIGHT
 
             return (
               <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
@@ -75,13 +82,14 @@ export function ProofOfConceptThree() {
                     },
                   ]}
                 />
-                <View
+                <View style={styles.lineCircle} />
+                <LinearGradient
                   style={[
                     {
                       height: lineHeight,
-                      backgroundColor: 'black',
                     },
                   ]}
+                  colors={['black', 'transparent']}
                 />
               </Animated.View>
             )
@@ -103,6 +111,7 @@ type Classes = {
   labelText: TextStyle
   linesView: ViewStyle
   lineView: ViewStyle
+  lineCircle: ViewStyle
   slideView: ViewStyle
 }
 
@@ -134,6 +143,13 @@ const styles = StyleSheet.create<Classes>({
     width: LINE_WIDTH,
     marginHorizontal: LINE_MARGIN,
     height: 40,
+  },
+  lineCircle: {
+    aspectRatio: 1,
+    width: LINE_CIRCLE_DIAMETER,
+    borderRadius: LINE_CIRCLE_RADIUS,
+    backgroundColor: 'black',
+    alignSelf: 'center',
   },
   slideView: {
     backgroundColor: 'tomato',
