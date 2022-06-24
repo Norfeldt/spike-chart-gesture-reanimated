@@ -65,7 +65,6 @@ export function ProofOfConceptThree() {
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
-      console.log('onUpdate', index.value)
       positionX.value = event.absoluteX
     })
     .onFinalize((event) => {
