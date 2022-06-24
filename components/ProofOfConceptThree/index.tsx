@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { ReactElement } from 'react'
 import { StyleSheet, View, ViewStyle, Text, TextStyle, Dimensions } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
@@ -10,7 +10,16 @@ import Animated, {
   withDelay,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
-import Svg, { Polygon, Rect } from 'react-native-svg'
+import Svg, {
+  Defs,
+  Polygon,
+  Rect,
+  LinearGradient as SVGLinearGradient,
+  Stop,
+  Mask,
+  G,
+  ForeignObject,
+} from 'react-native-svg'
 
 const clamp = (value: number, min: number, max: number) => {
   'worklet'
@@ -95,26 +104,30 @@ export function ProofOfConceptThree() {
                       height: lineHeight,
                     },
                   ]}
-                  colors={['black', 'transparent']}
+                  colors={['white', 'transparent']}
                 />
               </Animated.View>
             )
           })}
-          <Svg
-            height={GRAPH_HEIGHT}
-            width={SCREEN_WIDTH}
-            style={{ position: 'absolute', zIndex: -1 }}>
-            <Polygon
-              points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
-                value: DATA[DATA.length - 1],
-              })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
-                value: DATA[0],
-              })}`}
-              fill="lime"
-              stroke="purple"
-              strokeWidth="1"
-            />
-          </Svg>
+          <View
+            style={{
+              position: 'absolute',
+              zIndex: -1,
+              width: SCREEN_WIDTH,
+              height: 400,
+              backgroundColor: 'tranparent',
+            }}>
+            <SVGLinearGradientMask>
+              <Polygon
+                points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
+                  value: DATA[DATA.length - 1],
+                })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
+                  value: DATA[0],
+                })}`}
+                fill="#4C46C3"
+              />
+            </SVGLinearGradientMask>
+          </View>
         </View>
         <GestureDetector gesture={panGesture}>
           <Animated.View style={[styles.slideView]}></Animated.View>
@@ -144,6 +157,33 @@ function drawPoints(data: number[]) {
   return data.reduce((acc, value, index) => `${acc} ${drawSinglePoint(index, value)}`, '').trim()
 }
 
+export function SVGLinearGradientMask(props: { children: ReactElement }) {
+  return (
+    <Svg width="100%" height="100%">
+      <Defs>
+        <SVGLinearGradient
+          id="Gradient"
+          gradientUnits="userSpaceOnUse"
+          x1="50%"
+          y1="100%"
+          x2="50%"
+          y2="0%">
+          <Stop offset="0" stopColor="rgba(0,0,0,0)" stopOpacity="0" />
+          <Stop offset="1" stopColor="white" stopOpacity="1" />
+        </SVGLinearGradient>
+        <Mask id="Mask" x="0" y="0" width="100%" height="100%">
+          <Rect x="0" y="0" width="100%" height="100%" fill="url(#Gradient)" />
+        </Mask>
+      </Defs>
+      <G mask="url(#Mask)">
+        <ForeignObject x={0} y={0} width="100%" height="100%">
+          {props.children}
+        </ForeignObject>
+      </G>
+    </Svg>
+  )
+}
+
 type Classes = {
   container: ViewStyle
   labelOuterView: ViewStyle
@@ -158,7 +198,7 @@ type Classes = {
 const styles = StyleSheet.create<Classes>({
   container: {
     flex: 1,
-    backgroundColor: '#efefef',
+    backgroundColor: 'tranparent',
     justifyContent: 'center',
   },
   labelOuterView: {
@@ -171,6 +211,7 @@ const styles = StyleSheet.create<Classes>({
   labelText: {
     textAlign: 'center',
     height: TEXT_HEIGHT,
+    color: 'white',
   },
   linesView: {
     flexDirection: 'row',
@@ -188,7 +229,7 @@ const styles = StyleSheet.create<Classes>({
     aspectRatio: 1,
     width: LINE_CIRCLE_DIAMETER,
     borderRadius: LINE_CIRCLE_RADIUS,
-    backgroundColor: 'black',
+    backgroundColor: 'white',
     alignSelf: 'center',
     marginTop: LINE_CIRCLE_RADIUS / 2,
   },
