@@ -26,30 +26,33 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [...new Array(20)].map((_, index) => Math.round(Math.random() * 300 + 150))
+const DATA = [...new Array(200)].map((_, index) =>
+  Math.round(Math.random() * 1000_000 * 1.02 ** index + 800_000)
+)
 const DATA_MAX = Math.max(...DATA)
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const TEXT_HEIGHT = 20
+const LABEL_HEIGHT = 100
+const LABEL_FONT_SIZE = 42
 const COUNT = DATA.length
 const LINE_WIDTH = 2
 const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
 const GRAPH_HEIGHT = 200
 const STEP = SCREEN_WIDTH / COUNT
-const LINE_CIRCLE_RADIUS = 3
+const LINE_CIRCLE_RADIUS = 5
 const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
 
-const ThemedText = ({ children, style }: { children: string; style?: any }) => {
+const ThemedText = ({ children, style }: { children: string; style?: TextStyle }) => {
   return <Text style={[styles.labelText, style]}>{children}</Text>
 }
 
 export function ProofOfConceptThree() {
-  const positionX = useSharedValue(SCREEN_WIDTH - TEXT_HEIGHT)
+  const positionX = useSharedValue(SCREEN_WIDTH - 1)
   const index = useDerivedValue(() => {
     return Math.floor(positionX.value / STEP)
   })
   const translateY = useDerivedValue(() => {
-    return withSpring(index.value * TEXT_HEIGHT * -1)
+    return withTiming(-index.value * LABEL_HEIGHT)
   })
 
   const rLabelInnerViewStyle = useAnimatedStyle(() => {
@@ -60,6 +63,7 @@ export function ProofOfConceptThree() {
 
   const panGesture = Gesture.Pan()
     .onUpdate((event) => {
+      console.log('onUpdate', index.value)
       positionX.value = event.absoluteX
     })
     .onFinalize((event) => {
@@ -68,71 +72,73 @@ export function ProofOfConceptThree() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <View style={styles.container}>
-        <View style={styles.labelOuterView}>
-          <Animated.View style={[styles.labelInnerView, rLabelInnerViewStyle]}>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={styles.container}>
+          <View style={styles.labelOuterView}>
             {DATA.map((value, index) => (
-              <ThemedText key={index}>{`${value}`}</ThemedText>
-            ))}
-          </Animated.View>
-        </View>
-
-        <View style={[styles.linesView]}>
-          {DATA.map((value, i) => {
-            const rLineStyle = useAnimatedStyle(() => {
-              return {
-                opacity: withTiming(i === index.value ? 1 : 0),
-              }
-            }, [])
-
-            const lineHeight = (value / Math.max(...DATA)) * GRAPH_HEIGHT
-
-            return (
-              <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
-                <View
-                  style={[
-                    {
-                      height: GRAPH_HEIGHT - lineHeight,
-                      backgroundColor: 'transparent',
-                    },
-                  ]}
-                />
-                <View style={styles.lineCircle} />
-                <LinearGradient
-                  style={[
-                    {
-                      height: lineHeight,
-                    },
-                  ]}
-                  colors={['white', 'transparent']}
-                />
+              <Animated.View
+                key={`labelView-${index}`}
+                style={[styles.labelInnerView, rLabelInnerViewStyle]}>
+                <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
+                <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
               </Animated.View>
-            )
-          })}
-          <View
-            style={{
-              position: 'absolute',
-              zIndex: -1,
-              width: SCREEN_WIDTH,
-              height: 400,
-              backgroundColor: 'tranparent',
-            }}>
-            <SVGLinearGradientMask>
-              <Polygon
-                points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
-                  value: DATA[DATA.length - 1],
-                })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
-                  value: DATA[0],
-                })}`}
-                fill="#4C46C3"
-              />
-            </SVGLinearGradientMask>
+            ))}
           </View>
-        </View>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={[styles.slideView]}></Animated.View>
-        </GestureDetector>
-      </View>
+
+          <View style={[styles.linesView]}>
+            {DATA.map((value, i) => {
+              const rLineStyle = useAnimatedStyle(() => {
+                return {
+                  opacity: withTiming(i === index.value ? 1 : 0),
+                }
+              }, [])
+
+              const lineHeight = (value / Math.max(...DATA)) * GRAPH_HEIGHT
+
+              return (
+                <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
+                  <View
+                    style={[
+                      {
+                        height: GRAPH_HEIGHT - lineHeight,
+                        backgroundColor: 'transparent',
+                      },
+                    ]}
+                  />
+                  <View style={styles.lineCircle} />
+                  <LinearGradient
+                    style={[
+                      {
+                        height: lineHeight,
+                      },
+                    ]}
+                    colors={['white', 'transparent']}
+                  />
+                </Animated.View>
+              )
+            })}
+            <View
+              style={{
+                position: 'absolute',
+                zIndex: -1,
+                width: SCREEN_WIDTH,
+                height: 400,
+                backgroundColor: 'tranparent',
+              }}>
+              <SVGLinearGradientMask>
+                <Polygon
+                  points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
+                    value: DATA[DATA.length - 1],
+                  })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
+                    value: DATA[0],
+                  })}`}
+                  fill="#4C46C3"
+                />
+              </SVGLinearGradientMask>
+            </View>
+          </View>
+        </Animated.View>
+      </GestureDetector>
     </GestureHandlerRootView>
   )
 }
@@ -202,23 +208,26 @@ const styles = StyleSheet.create<Classes>({
     justifyContent: 'center',
   },
   labelOuterView: {
-    borderColor: 'red',
-    borderWidth: 1,
-    height: TEXT_HEIGHT,
+    width: '100%',
+    height: LABEL_HEIGHT,
     overflow: 'hidden',
   },
-  labelInnerView: {},
+  labelInnerView: {
+    width: '100%',
+    height: LABEL_HEIGHT,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
   labelText: {
+    width: '100%',
     textAlign: 'center',
-    height: TEXT_HEIGHT,
     color: 'white',
+    fontSize: LABEL_FONT_SIZE,
   },
   linesView: {
     flexDirection: 'row',
     width: SCREEN_WIDTH,
     height: GRAPH_HEIGHT,
-    borderColor: 'blue',
-    borderWidth: 1,
   },
   lineView: {
     width: LINE_WIDTH,
