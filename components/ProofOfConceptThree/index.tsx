@@ -59,7 +59,7 @@ export function ProofOfConceptThree() {
 
   const rLabelInnerViewStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: translateY.value }],
+      transform: [{ translateY: withSpring(translateY.value, { stiffness: 300, damping: 50 }) }],
     }
   }, [])
 
