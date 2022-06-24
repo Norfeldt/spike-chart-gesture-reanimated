@@ -26,7 +26,7 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [...new Array(30)].map((_, index) =>
+const DATA = [...new Array(300)].map((_, index) =>
   Math.round(Math.random() * 50_000 * 1.02 ** index)
 )
 const DATA_MAX = Math.max(...DATA)
