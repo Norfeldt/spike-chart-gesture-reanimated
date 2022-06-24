@@ -26,8 +26,8 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [...new Array(200)].map((_, index) =>
-  Math.round(Math.random() * 1000_000 * 1.02 ** index + 800_000)
+const DATA = [...new Array(30)].map((_, index) =>
+  Math.round(Math.random() * 50_000 * 1.02 ** index)
 )
 const DATA_MAX = Math.max(...DATA)
 
@@ -37,7 +37,9 @@ const LABEL_FONT_SIZE = 42
 const COUNT = DATA.length
 const LINE_WIDTH = 2
 const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
-const GRAPH_HEIGHT = 200
+const GRAPH_HEIGHT = 400
+const GRAPH_BOTTOM_PADDING = GRAPH_HEIGHT / 4
+const GRAPH_DRAW_AREA = GRAPH_HEIGHT - GRAPH_BOTTOM_PADDING
 const STEP = SCREEN_WIDTH / COUNT
 const LINE_CIRCLE_RADIUS = 5
 const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
@@ -93,7 +95,8 @@ export function ProofOfConceptThree() {
                 }
               }, [])
 
-              const lineHeight = (value / Math.max(...DATA)) * GRAPH_HEIGHT
+              const lineHeight =
+                (value / Math.max(...DATA)) * GRAPH_DRAW_AREA + GRAPH_BOTTOM_PADDING
 
               return (
                 <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
@@ -146,7 +149,7 @@ export function ProofOfConceptThree() {
 function getYPosition({
   value,
   maxValue = DATA_MAX,
-  height = GRAPH_HEIGHT,
+  height = GRAPH_DRAW_AREA,
 }: {
   value: number
   maxValue?: number
@@ -173,7 +176,7 @@ export function SVGLinearGradientMask(props: { children: ReactElement }) {
           x1="50%"
           y1="100%"
           x2="50%"
-          y2="0%">
+          y2="50%">
           <Stop offset="0" stopColor="rgba(0,0,0,0)" stopOpacity="0" />
           <Stop offset="1" stopColor="white" stopOpacity="1" />
         </SVGLinearGradient>
