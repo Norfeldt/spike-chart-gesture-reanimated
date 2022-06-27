@@ -11,7 +11,7 @@ export default function App() {
   // return <ProofOfConceptThree />
   // return <ProofOfConceptFour />
   return (
-    <View style={{ flex: 1, backgroundColor: '#202032' }}>
+    <View style={{ flex: 1, backgroundColor: '#202032', paddingTop: '30%' }}>
       <ProofOfConceptThree />
       {/* <ProofOfConceptFour /> */}
     </View>

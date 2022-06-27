@@ -8,6 +8,7 @@ import Animated, {
   useAnimatedStyle,
   withTiming,
   withDelay,
+  interpolate,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, {
@@ -26,17 +27,28 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [...new Array(30)].map((_, index) =>
-  Math.round(Math.random() * 50 * 1000 * 1.02 ** index)
-)
+const DATA: number[] = [...new Array(200)].reduce((acc, _value, index) => {
+  if (index === 0) {
+    return [10000]
+  }
+
+  const previousValue = acc[index - 1]
+  const value = Math.round(
+    previousValue * 1.008 +
+      interpolate(Math.random(), [0, 1], [-previousValue * 0.08, previousValue * 0.08])
+  )
+
+  return [...acc, value]
+}, [] as number[])
 const DATA_MAX = Math.max(...DATA)
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
+const SAFE_AREA_HORIZONTAL_PADDING = 25
 const LABEL_HEIGHT = 100
 const LABEL_FONT_SIZE = 42
 const COUNT = DATA.length
 const LINE_WIDTH = 2
-const LINE_MARGIN = (SCREEN_WIDTH / COUNT - LINE_WIDTH) / 2
+const LINE_MARGIN = ((SCREEN_WIDTH - 2 * SAFE_AREA_HORIZONTAL_PADDING) / COUNT - LINE_WIDTH) / 2
 const GRAPH_HEIGHT = 400
 const GRAPH_BOTTOM_PADDING = GRAPH_HEIGHT / 4
 const GRAPH_DRAW_AREA = GRAPH_HEIGHT - GRAPH_BOTTOM_PADDING
@@ -65,10 +77,10 @@ export function ProofOfConceptThree() {
 
   const panGesture = Gesture.Pan()
     .onBegin((event) => {
-      positionX.value = event.absoluteX
+      positionX.value = event.x
     })
     .onUpdate((event) => {
-      positionX.value = event.absoluteX
+      positionX.value = event.x
     })
     .onFinalize((event) => {
       positionX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
@@ -78,6 +90,28 @@ export function ProofOfConceptThree() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <GestureDetector gesture={panGesture}>
         <Animated.View style={styles.container}>
+          <View
+            style={{
+              position: 'absolute',
+              left: 0,
+              width: SAFE_AREA_HORIZONTAL_PADDING,
+              height: '100%',
+              borderColor: 'red',
+              borderWidth: 1,
+              zIndex: 100,
+            }}
+          />
+          <View
+            style={{
+              position: 'absolute',
+              right: 0,
+              width: SAFE_AREA_HORIZONTAL_PADDING,
+              height: '100%',
+              borderColor: 'red',
+              borderWidth: 1,
+              zIndex: 100,
+            }}
+          />
           <View style={styles.labelOuterView}>
             {DATA.map((value, index) => (
               <Animated.View
@@ -112,11 +146,7 @@ export function ProofOfConceptThree() {
                   />
                   <View style={styles.lineCircle} />
                   <LinearGradient
-                    style={[
-                      {
-                        height: lineHeight,
-                      },
-                    ]}
+                    style={{ height: lineHeight }}
                     colors={['white', 'transparent']}
                   />
                 </Animated.View>
@@ -132,11 +162,17 @@ export function ProofOfConceptThree() {
               }}>
               <SVGLinearGradientMask>
                 <Polygon
-                  points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
+                  points={`
+                  ${drawPoints(DATA)}
+                  ${SCREEN_WIDTH},${getYPosition({
                     value: DATA[DATA.length - 1],
-                  })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
+                  })}
+                  ${SCREEN_WIDTH},${GRAPH_HEIGHT} 
+                  0,${GRAPH_HEIGHT} 
+                  0,${getYPosition({
                     value: DATA[0],
-                  })}`}
+                  })}
+                  `.replace(/\n/g, ' ')}
                   fill="#4C46C3"
                 />
               </SVGLinearGradientMask>
@@ -161,7 +197,11 @@ function getYPosition({
 }
 
 function drawSinglePoint(x: number, y: number) {
-  return ` ${x * STEP + STEP / 2},${getYPosition({ value: y })}`
+  return ` ${interpolate(
+    x,
+    [0, COUNT - 1],
+    [SAFE_AREA_HORIZONTAL_PADDING, SCREEN_WIDTH - SAFE_AREA_HORIZONTAL_PADDING]
+  )},${getYPosition({ value: y })}`
 }
 
 function drawPoints(data: number[]) {
@@ -233,11 +273,13 @@ const styles = StyleSheet.create<Classes>({
     flexDirection: 'row',
     width: SCREEN_WIDTH,
     height: GRAPH_HEIGHT,
+    paddingHorizontal: SAFE_AREA_HORIZONTAL_PADDING - LINE_CIRCLE_DIAMETER,
+    borderColor: 'red',
   },
   lineView: {
     width: LINE_WIDTH,
     marginHorizontal: LINE_MARGIN,
-    height: 40,
+    height: GRAPH_BOTTOM_PADDING,
   },
   lineCircle: {
     aspectRatio: 1,
