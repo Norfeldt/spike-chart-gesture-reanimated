@@ -26,7 +26,7 @@ const clamp = (value: number, min: number, max: number) => {
   return Math.min(Math.max(value, min), max)
 }
 
-const DATA = [...new Array(300)].map((_, index) =>
+const DATA = [...new Array(30)].map((_, index) =>
   Math.round(Math.random() * 50 * 1000 * 1.02 ** index)
 )
 const DATA_MAX = Math.max(...DATA)
@@ -59,11 +59,14 @@ export function ProofOfConceptThree() {
 
   const rLabelInnerViewStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: withSpring(translateY.value, { stiffness: 300, damping: 50 }) }],
+      transform: [{ translateY: translateY.value }],
     }
   }, [])
 
   const panGesture = Gesture.Pan()
+    .onBegin((event) => {
+      positionX.value = event.absoluteX
+    })
     .onUpdate((event) => {
       positionX.value = event.absoluteX
     })
@@ -71,81 +74,75 @@ export function ProofOfConceptThree() {
       positionX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
     })
 
-  const tapGesture = Gesture.Tap().onStart((event) => {
-    positionX.value = event.absoluteX
-  })
-
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <GestureDetector gesture={tapGesture}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={styles.container}>
-            <View style={styles.labelOuterView}>
-              {DATA.map((value, index) => (
-                <Animated.View
-                  key={`labelView-${index}`}
-                  style={[styles.labelInnerView, rLabelInnerViewStyle]}>
-                  <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
-                  <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
-                </Animated.View>
-              ))}
-            </View>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={styles.container}>
+          <View style={styles.labelOuterView}>
+            {DATA.map((value, index) => (
+              <Animated.View
+                key={`labelView-${index}`}
+                style={[styles.labelInnerView, rLabelInnerViewStyle]}>
+                <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
+                <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
+              </Animated.View>
+            ))}
+          </View>
 
-            <View style={[styles.linesView]}>
-              {DATA.map((value, i) => {
-                const rLineStyle = useAnimatedStyle(() => {
-                  return {
-                    opacity: withTiming(i === index.value ? 1 : 0),
-                  }
-                }, [])
+          <View style={[styles.linesView]}>
+            {DATA.map((value, i) => {
+              const rLineStyle = useAnimatedStyle(() => {
+                return {
+                  opacity: i === index.value ? 1 : 0,
+                }
+              }, [])
 
-                const lineHeight =
-                  (value / Math.max(...DATA)) * GRAPH_DRAW_AREA + GRAPH_BOTTOM_PADDING
+              const lineHeight =
+                (value / Math.max(...DATA)) * GRAPH_DRAW_AREA + GRAPH_BOTTOM_PADDING
 
-                return (
-                  <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
-                    <View
-                      style={[
-                        {
-                          height: GRAPH_HEIGHT - lineHeight,
-                          backgroundColor: 'transparent',
-                        },
-                      ]}
-                    />
-                    <View style={styles.lineCircle} />
-                    <LinearGradient
-                      style={[
-                        {
-                          height: lineHeight,
-                        },
-                      ]}
-                      colors={['white', 'transparent']}
-                    />
-                  </Animated.View>
-                )
-              })}
-              <View
-                style={{
-                  position: 'absolute',
-                  zIndex: -1,
-                  width: SCREEN_WIDTH,
-                  height: 400,
-                  backgroundColor: 'tranparent',
-                }}>
-                <SVGLinearGradientMask>
-                  <Polygon
-                    points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
-                      value: DATA[DATA.length - 1],
-                    })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
-                      value: DATA[0],
-                    })}`}
-                    fill="#4C46C3"
+              return (
+                <Animated.View key={`line-${i}`} style={[styles.lineView, rLineStyle]}>
+                  <View
+                    style={[
+                      {
+                        height: GRAPH_HEIGHT - lineHeight,
+                        backgroundColor: 'transparent',
+                      },
+                    ]}
                   />
-                </SVGLinearGradientMask>
-              </View>
+                  <View style={styles.lineCircle} />
+                  <LinearGradient
+                    style={[
+                      {
+                        height: lineHeight,
+                      },
+                    ]}
+                    colors={['white', 'transparent']}
+                  />
+                </Animated.View>
+              )
+            })}
+            <View
+              style={{
+                position: 'absolute',
+                zIndex: -1,
+                width: SCREEN_WIDTH,
+                height: 400,
+                backgroundColor: 'tranparent',
+              }}>
+              <SVGLinearGradientMask>
+                <Polygon
+                  points={`${drawPoints(DATA)} ${SCREEN_WIDTH},${getYPosition({
+                    value: DATA[DATA.length - 1],
+                  })} ${SCREEN_WIDTH},${GRAPH_HEIGHT} 0,${GRAPH_HEIGHT} 0,${getYPosition({
+                    value: DATA[0],
+                  })}`}
+                  fill="#4C46C3"
+                />
+              </SVGLinearGradientMask>
             </View>
-          </Animated.View>
-        </GestureDetector>
+          </View>
+        </Animated.View>
       </GestureDetector>
     </GestureHandlerRootView>
   )
