@@ -57,7 +57,6 @@ export default function App() {
 
                 // hack to avoid lagging the UI thread 🦟
                 setTimeout(() => {
-                  console.log('hacking')
                   setData(dataRanges[item as DataRangeKeys])
                   setActiveDataRangeLabel(item as DataRangeKeys)
                 }, 1000)
