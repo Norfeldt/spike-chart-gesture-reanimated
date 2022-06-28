@@ -20,9 +20,10 @@ import Svg, {
   G,
   ForeignObject,
 } from 'react-native-svg'
+import { ReText } from 'react-native-redash'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
-const SAFE_HORIZONTAL_PADDING = 35
+const SAFE_HORIZONTAL_PADDING = 15
 const LABEL_HEIGHT = 100
 const LABEL_FONT_SIZE = 42
 
@@ -51,83 +52,90 @@ export function ProofOfConceptThree(props: { data: number[] }) {
 
     return Math.round(interpolatedIndex)
   }, [scrollX, data])
-  const labelTranslateY = useDerivedValue(() => {
-    return withTiming(-index.value * LABEL_HEIGHT)
+  const dataValue = useDerivedValue(() => {
+    return `${data.value[index.value].toLocaleString()}`
   })
-
-  const rLabelInnerViewStyle = useAnimatedStyle(() => {
+  const labelOpacity = useSharedValue(1)
+  const rLabelViewStyle = useAnimatedStyle(() => {
     return {
-      transform: [{ translateY: labelTranslateY.value }],
+      opacity: labelOpacity.value,
     }
   }, [])
 
   const panGesture = Gesture.Pan()
     .onBegin((event) => {
       scrollX.value = event.absoluteX
+
+      labelOpacity.value = withTiming(1, { duration: 500 })
     })
     .onUpdate((event) => {
+      // labelOpacity.value = 0
+      labelOpacity.value = 0.5
       scrollX.value = event.absoluteX
+    })
+    .onEnd(() => {
+      labelOpacity.value = withTiming(1, { duration: 500 })
     })
     .onFinalize((event) => {
       scrollX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
+
+      labelOpacity.value = withDelay(4700, withTiming(0))
+      labelOpacity.value = withDelay(5200, withTiming(1))
     })
 
   return (
-    <GestureHandlerRootView style={{ flex: 1, borderColor: 'red', borderWidth: 1 }}>
-      <GestureDetector gesture={panGesture}>
-        <Animated.View style={styles.container}>
-          <Animated.View style={styles.labelOuterView}>
-            {data.value.map((value, index) => (
-              <Animated.View
-                key={`labelView-${index}`}
-                style={[styles.labelInnerView, rLabelInnerViewStyle]}>
-                <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
-                <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
-              </Animated.View>
-            ))}
-          </Animated.View>
+    <View style={{ width: '100%', height: GRAPH_HEIGHT + LABEL_HEIGHT }}>
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <GestureDetector gesture={panGesture}>
+          <Animated.View style={styles.container}>
+            <Animated.View style={[styles.labelOuterView, rLabelViewStyle]}>
+              <ReText
+                text={dataValue}
+                style={{ fontSize: LABEL_FONT_SIZE, color: 'white', textAlign: 'center' }}></ReText>
+            </Animated.View>
 
-          <Animated.View style={[styles.linesView]}>
-            {data.value.map((value, i) => {
-              const left =
-                interpolate(
-                  i,
-                  [0, data.value.length - 1],
-                  [0, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2]
-                ) +
-                SAFE_HORIZONTAL_PADDING -
-                LINE_WIDTH / 2
-              const height = (value / dataMax.value) * GRAPH_DRAW_AREA_HEIGHT + GRAPH_BOTTOM_PADDING
+            <Animated.View style={[styles.linesView]}>
+              {data.value.map((value, i) => {
+                const left =
+                  interpolate(
+                    i,
+                    [0, data.value.length - 1],
+                    [0, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2]
+                  ) +
+                  SAFE_HORIZONTAL_PADDING -
+                  LINE_WIDTH / 2
+                const height =
+                  (value / dataMax.value) * GRAPH_DRAW_AREA_HEIGHT + GRAPH_BOTTOM_PADDING
 
-              const rLineStyle = useAnimatedStyle(() => {
-                return {
-                  left,
-                  height,
-                  opacity: i === index.value ? 1 : 0,
-                  position: 'absolute',
-                  width: LINE_WIDTH,
-                }
-              }, [])
+                const rLineStyle = useAnimatedStyle(() => {
+                  return {
+                    left,
+                    height,
+                    opacity: i === index.value ? 1 : 0,
+                    position: 'absolute',
+                    width: LINE_WIDTH,
+                  }
+                }, [])
 
-              return (
-                <Animated.View key={`line-${i}`} style={rLineStyle}>
-                  <Animated.View
-                    style={{
-                      height: GRAPH_HEIGHT - height,
-                      backgroundColor: 'transparent',
-                    }}
-                  />
-                  <View style={styles.lineCircle} />
-                  <LinearGradient style={{ height }} colors={['white', 'transparent']} />
-                </Animated.View>
-              )
-            })}
+                return (
+                  <Animated.View key={`line-${i}`} style={rLineStyle}>
+                    <Animated.View
+                      style={{
+                        height: GRAPH_HEIGHT - height,
+                        backgroundColor: 'transparent',
+                      }}
+                    />
+                    <View style={styles.lineCircle} />
+                    <LinearGradient style={{ height }} colors={['white', 'transparent']} />
+                  </Animated.View>
+                )
+              })}
 
-            <Animated.View style={styles.graphPolygonView}>
-              <SVGLinearGradientMask>
-                {/* <Rect x={0} y={0} width="100%" height="100%" stroke="white" strokeWidth={5} /> */}
-                <Polygon
-                  points={`
+              <Animated.View style={styles.graphPolygonView}>
+                <SVGLinearGradientMask>
+                  {/* <Rect x={0} y={0} width="100%" height="100%" stroke="white" strokeWidth={5} /> */}
+                  <Polygon
+                    points={`
                   0,${GRAPH_HEIGHT} 
                   0,${getYPosition({
                     value: data.value[0],
@@ -135,19 +143,20 @@ export function ProofOfConceptThree(props: { data: number[] }) {
                   })}
                   ${drawPoints(data.value)}
                   ${SCREEN_WIDTH},${getYPosition({
-                    value: data.value[data.value.length - 1],
-                    dataMaxValue: dataMax.value,
-                  })}
+                      value: data.value[data.value.length - 1],
+                      dataMaxValue: dataMax.value,
+                    })}
                   ${SCREEN_WIDTH},${GRAPH_HEIGHT} 
                   `.replace(/\n/g, ' ')}
-                  fill="#4C46C3"
-                />
-              </SVGLinearGradientMask>
+                    fill="#4C46C3"
+                  />
+                </SVGLinearGradientMask>
+              </Animated.View>
             </Animated.View>
           </Animated.View>
-        </Animated.View>
-      </GestureDetector>
-    </GestureHandlerRootView>
+        </GestureDetector>
+      </GestureHandlerRootView>
+    </View>
   )
 }
 
@@ -281,7 +290,5 @@ const styles = StyleSheet.create<Classes>({
     width: SCREEN_WIDTH,
     height: '100%',
     backgroundColor: 'tranparent',
-    borderColor: 'lime',
-    borderWidth: 1,
   },
 })
