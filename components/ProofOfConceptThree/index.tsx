@@ -133,7 +133,6 @@ export function ProofOfConceptThree(props: { data: number[] }) {
 
               <Animated.View style={styles.graphPolygonView}>
                 <SVGLinearGradientMask>
-                  {/* <Rect x={0} y={0} width="100%" height="100%" stroke="white" strokeWidth={5} /> */}
                   <Polygon
                     points={`
                   0,${GRAPH_HEIGHT} 
