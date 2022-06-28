@@ -1,5 +1,5 @@
 import React, { ReactElement } from 'react'
-import { StyleSheet, View, ViewStyle, Text, TextStyle, Dimensions, FlatList } from 'react-native'
+import { StyleSheet, View, ViewStyle, Text, TextStyle, Dimensions } from 'react-native'
 import { Gesture, GestureDetector, GestureHandlerRootView } from 'react-native-gesture-handler'
 import Animated, {
   useDerivedValue,
@@ -8,7 +8,6 @@ import Animated, {
   withTiming,
   withDelay,
   interpolate,
-  useAnimatedProps,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, {
@@ -20,21 +19,7 @@ import Svg, {
   Mask,
   G,
   ForeignObject,
-  Path,
 } from 'react-native-svg'
-
-const DATA_ALL: number[] = [...new Array(200)].reduce((acc, _value, index) => {
-  if (index === 0) {
-    return [10000]
-  }
-  const previousValue = acc[index - 1]
-  const value = Math.round(
-    previousValue * 1.008 +
-      interpolate(Math.random(), [0, 1], [-previousValue * 0.08, previousValue * 0.08])
-  )
-
-  return [...acc, value]
-}, [] as number[])
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SAFE_HORIZONTAL_PADDING = 35
@@ -48,26 +33,24 @@ const GRAPH_DRAW_AREA_HEIGHT = GRAPH_HEIGHT - GRAPH_BOTTOM_PADDING
 const LINE_CIRCLE_RADIUS = 5
 const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
 
-const ThemedText = ({ children, style }: { children: string; style?: TextStyle }) => {
+export const ThemedText = ({ children, style }: { children: string; style?: TextStyle }) => {
   return <Text style={[styles.labelText, style]}>{children}</Text>
 }
 
-const AnimatedPath = Animated.createAnimatedComponent(Path)
-
-export function ProofOfConceptThree() {
-  const [data, setData] = React.useState(DATA_ALL)
-
+export function ProofOfConceptThree(props: { data: number[] }) {
+  const data = useSharedValue(props.data)
+  const dataMax = useDerivedValue(() => Math.max(...data.value))
   const scrollX = useSharedValue(SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2)
   const index = useDerivedValue(() => {
     const inputRange = [SAFE_HORIZONTAL_PADDING, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING]
-    const outputRange = [0, data.length - 1]
+    const outputRange = [0, data.value.length - 1]
     const interpolatedIndex = interpolate(scrollX.value, inputRange, outputRange, {
       extrapolateLeft: 'clamp',
       extrapolateRight: 'clamp',
     })
 
     return Math.round(interpolatedIndex)
-  })
+  }, [scrollX, data])
   const labelTranslateY = useDerivedValue(() => {
     return withTiming(-index.value * LABEL_HEIGHT)
   })
@@ -89,106 +72,82 @@ export function ProofOfConceptThree() {
       scrollX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
     })
 
-  const animatedProps = useAnimatedProps(() => {
-    // draw a circle
-    const path = `
-      M 100, 100
-      m -${scrollX.value}, 0
-      a ${scrollX.value},${scrollX.value} 0 1,0 ${scrollX.value * 2},0
-      a ${scrollX.value},${scrollX.value} 0 1,0 ${-scrollX.value * 2},0
-      `
-    return {
-      d: path,
-    }
-  })
-
   return (
-    <>
-      <GestureHandlerRootView style={{ flex: 1 }}>
-        <GestureDetector gesture={panGesture}>
-          <Animated.View style={styles.container}>
-            <View style={styles.labelOuterView}>
-              {DATA_ALL.map((value, index) => (
-                <Animated.View
-                  key={`labelView-${index}`}
-                  style={[styles.labelInnerView, rLabelInnerViewStyle]}>
-                  <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
-                  <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
-                </Animated.View>
-              ))}
-            </View>
+    <GestureHandlerRootView style={{ flex: 1, borderColor: 'red', borderWidth: 1 }}>
+      <GestureDetector gesture={panGesture}>
+        <Animated.View style={styles.container}>
+          <Animated.View style={styles.labelOuterView}>
+            {data.value.map((value, index) => (
+              <Animated.View
+                key={`labelView-${index}`}
+                style={[styles.labelInnerView, rLabelInnerViewStyle]}>
+                <ThemedText style={{ fontSize: LABEL_FONT_SIZE / 2 }}>{`${index}`}</ThemedText>
+                <ThemedText>{`${value.toLocaleString()}`}</ThemedText>
+              </Animated.View>
+            ))}
+          </Animated.View>
 
-            <View style={[styles.linesView]}>
-              {DATA_ALL.map((value, i) => {
-                const left =
-                  interpolate(
-                    i,
-                    [0, data.length - 1],
-                    [0, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2]
-                  ) +
-                  SAFE_HORIZONTAL_PADDING -
-                  LINE_WIDTH / 2
-                const height =
-                  (value / Math.max(...DATA_ALL)) * GRAPH_DRAW_AREA_HEIGHT + GRAPH_BOTTOM_PADDING
+          <Animated.View style={[styles.linesView]}>
+            {data.value.map((value, i) => {
+              const left =
+                interpolate(
+                  i,
+                  [0, data.value.length - 1],
+                  [0, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2]
+                ) +
+                SAFE_HORIZONTAL_PADDING -
+                LINE_WIDTH / 2
+              const height = (value / dataMax.value) * GRAPH_DRAW_AREA_HEIGHT + GRAPH_BOTTOM_PADDING
 
-                const rLineStyle = useAnimatedStyle(() => {
-                  return {
-                    left,
-                    height,
-                    opacity: i === index.value ? 1 : 0,
-                    position: 'absolute',
-                    width: LINE_WIDTH,
-                  }
-                }, [])
-
-                return (
-                  <Animated.View key={`line-${i}`} style={rLineStyle}>
-                    <View
-                      style={{
-                        height: GRAPH_HEIGHT - height,
-                        backgroundColor: 'transparent',
-                      }}
-                    />
-                    <View style={styles.lineCircle} />
-                    <LinearGradient style={{ height }} colors={['white', 'transparent']} />
-                  </Animated.View>
-                )
-              })}
-              <View
-                style={{
+              const rLineStyle = useAnimatedStyle(() => {
+                return {
+                  left,
+                  height,
+                  opacity: i === index.value ? 1 : 0,
                   position: 'absolute',
-                  zIndex: -1,
-                  width: SCREEN_WIDTH,
-                  height: 400,
-                  backgroundColor: 'tranparent',
-                }}>
-                <SVGLinearGradientMask>
-                  <Polygon
-                    points={`
+                  width: LINE_WIDTH,
+                }
+              }, [])
+
+              return (
+                <Animated.View key={`line-${i}`} style={rLineStyle}>
+                  <Animated.View
+                    style={{
+                      height: GRAPH_HEIGHT - height,
+                      backgroundColor: 'transparent',
+                    }}
+                  />
+                  <View style={styles.lineCircle} />
+                  <LinearGradient style={{ height }} colors={['white', 'transparent']} />
+                </Animated.View>
+              )
+            })}
+
+            <Animated.View style={styles.graphPolygonView}>
+              <SVGLinearGradientMask>
+                {/* <Rect x={0} y={0} width="100%" height="100%" stroke="white" strokeWidth={5} /> */}
+                <Polygon
+                  points={`
                   0,${GRAPH_HEIGHT} 
                   0,${getYPosition({
-                    value: DATA_ALL[0],
-                    dataMaxValue: Math.max(...DATA_ALL),
+                    value: data.value[0],
+                    dataMaxValue: dataMax.value,
                   })}
-                  ${drawPoints(DATA_ALL)}
+                  ${drawPoints(data.value)}
                   ${SCREEN_WIDTH},${getYPosition({
-                      value: DATA_ALL[data.length - 1],
-                      dataMaxValue: Math.max(...DATA_ALL),
-                    })}
+                    value: data.value[data.value.length - 1],
+                    dataMaxValue: dataMax.value,
+                  })}
                   ${SCREEN_WIDTH},${GRAPH_HEIGHT} 
                   `.replace(/\n/g, ' ')}
-                    fill="#4C46C3"
-                  />
-                </SVGLinearGradientMask>
-              </View>
-            </View>
-            {/* <Svg>
-              <AnimatedPath animatedProps={animatedProps} fill="orange" />
-            </Svg> */}
+                  fill="#4C46C3"
+                />
+              </SVGLinearGradientMask>
+            </Animated.View>
           </Animated.View>
-        </GestureDetector>
-      </GestureHandlerRootView>
-    </>
+        </Animated.View>
+      </GestureDetector>
+    </GestureHandlerRootView>
   )
 }
 
@@ -272,22 +231,18 @@ type Classes = {
   linesView: ViewStyle
   lineCircle: ViewStyle
   slideView: ViewStyle
+  graphPolygonView: ViewStyle
 }
 
 const styles = StyleSheet.create<Classes>({
   container: {
     flex: 1,
     backgroundColor: 'tranparent',
-    justifyContent: 'center',
-    borderColor: 'red',
-    borderWidth: 1,
   },
   labelOuterView: {
     width: '100%',
     height: LABEL_HEIGHT,
     overflow: 'hidden',
-    borderColor: 'green',
-    borderWidth: 1,
   },
   labelInnerView: {
     width: '100%',
@@ -302,12 +257,10 @@ const styles = StyleSheet.create<Classes>({
     fontSize: LABEL_FONT_SIZE,
   },
   linesView: {
+    flex: 1,
     flexDirection: 'row',
     width: SCREEN_WIDTH,
-    height: GRAPH_HEIGHT,
     paddingHorizontal: SAFE_HORIZONTAL_PADDING - LINE_CIRCLE_DIAMETER,
-    borderColor: 'orange',
-    borderWidth: 1,
   },
   lineCircle: {
     aspectRatio: 1,
@@ -321,5 +274,14 @@ const styles = StyleSheet.create<Classes>({
     backgroundColor: 'tomato',
     width: '100%',
     height: 60,
+  },
+  graphPolygonView: {
+    position: 'absolute',
+    zIndex: -1,
+    width: SCREEN_WIDTH,
+    height: '100%',
+    backgroundColor: 'tranparent',
+    borderColor: 'lime',
+    borderWidth: 1,
   },
 })
