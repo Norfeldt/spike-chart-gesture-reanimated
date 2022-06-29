@@ -8,6 +8,8 @@ import Animated, {
   withTiming,
   withDelay,
   interpolate,
+  runOnJS,
+  useAnimatedReaction,
 } from 'react-native-reanimated'
 import { LinearGradient } from 'expo-linear-gradient'
 import Svg, {
@@ -21,6 +23,7 @@ import Svg, {
   ForeignObject,
 } from 'react-native-svg'
 import { ReText } from 'react-native-redash'
+import * as Haptics from 'expo-haptics'
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window')
 const SAFE_HORIZONTAL_PADDING = 15
@@ -34,13 +37,24 @@ const GRAPH_DRAW_AREA_HEIGHT = GRAPH_HEIGHT - GRAPH_BOTTOM_PADDING
 const LINE_CIRCLE_RADIUS = 5
 const LINE_CIRCLE_DIAMETER = LINE_CIRCLE_RADIUS * 2
 
+const INACTIVE_TIMEOUT_MS = 5000
+
 export const ThemedText = ({ children, style }: { children: string; style?: TextStyle }) => {
   return <Text style={[styles.labelText, style]}>{children}</Text>
+}
+
+function hapticAsyncJSThreadWrapper(style?: Haptics.NotificationFeedbackType) {
+  if (style) {
+    Haptics.notificationAsync(style)
+  } else {
+    Haptics.selectionAsync()
+  }
 }
 
 export function ProofOfConceptThree(props: { data: number[] }) {
   const data = useSharedValue(props.data)
   const dataMax = useDerivedValue(() => Math.max(...data.value))
+
   const scrollX = useSharedValue(SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING * 2)
   const index = useDerivedValue(() => {
     const inputRange = [SAFE_HORIZONTAL_PADDING, SCREEN_WIDTH - SAFE_HORIZONTAL_PADDING]
@@ -50,10 +64,20 @@ export function ProofOfConceptThree(props: { data: number[] }) {
       extrapolateRight: 'clamp',
     })
 
-    return Math.round(interpolatedIndex)
+    const roundedIndex = Math.round(interpolatedIndex)
+
+    return roundedIndex
   }, [scrollX, data])
-  const dataValue = useDerivedValue(() => {
-    return `${data.value[index.value].toLocaleString()}`
+  const lastTwoIndexes = useSharedValue<number[] | null[]>([null, null])
+
+  const label = useDerivedValue(() => {
+    const label = `${data.value[index.value].toLocaleString()}`
+
+    if (label === `${data.value[data.value.length - 1].toLocaleString()}`) {
+      runOnJS(hapticAsyncJSThreadWrapper)(Haptics.NotificationFeedbackType.Warning)
+    }
+
+    return label
   })
   const labelOpacity = useSharedValue(1)
   const rLabelViewStyle = useAnimatedStyle(() => {
@@ -64,12 +88,20 @@ export function ProofOfConceptThree(props: { data: number[] }) {
 
   const panGesture = Gesture.Pan()
     .onBegin((event) => {
+      runOnJS(hapticAsyncJSThreadWrapper)()
       scrollX.value = event.absoluteX
-
       labelOpacity.value = withTiming(1, { duration: 500 })
     })
     .onUpdate((event) => {
-      // labelOpacity.value = 0
+      // can't use useDerivedValue since it does not have access to own values (lastTwoIndexes.value[1])
+      lastTwoIndexes.value = [lastTwoIndexes.value[1] ?? 0, index.value]
+      if (lastTwoIndexes.value[0] !== lastTwoIndexes.value[1]) {
+        if (index.value === 0) {
+          runOnJS(hapticAsyncJSThreadWrapper)(Haptics.NotificationFeedbackType.Warning)
+        } else {
+          runOnJS(hapticAsyncJSThreadWrapper)()
+        }
+      }
       labelOpacity.value = 0.5
       scrollX.value = event.absoluteX
     })
@@ -77,10 +109,11 @@ export function ProofOfConceptThree(props: { data: number[] }) {
       labelOpacity.value = withTiming(1, { duration: 500 })
     })
     .onFinalize((event) => {
-      scrollX.value = withDelay(5000, withTiming(SCREEN_WIDTH - 1))
+      runOnJS(hapticAsyncJSThreadWrapper)()
+      scrollX.value = withDelay(INACTIVE_TIMEOUT_MS, withTiming(SCREEN_WIDTH - 1))
 
-      labelOpacity.value = withDelay(4700, withTiming(0))
-      labelOpacity.value = withDelay(5200, withTiming(1))
+      labelOpacity.value = withDelay(INACTIVE_TIMEOUT_MS - 300, withTiming(0))
+      labelOpacity.value = withDelay(INACTIVE_TIMEOUT_MS + 300, withTiming(1))
     })
 
   return (
@@ -90,7 +123,7 @@ export function ProofOfConceptThree(props: { data: number[] }) {
           <Animated.View style={styles.container}>
             <Animated.View style={[styles.labelOuterView, rLabelViewStyle]}>
               <ReText
-                text={dataValue}
+                text={label}
                 style={{ fontSize: LABEL_FONT_SIZE, color: 'white', textAlign: 'center' }}></ReText>
             </Animated.View>
 
