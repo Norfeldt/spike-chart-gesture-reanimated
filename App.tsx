@@ -24,8 +24,8 @@ const dataRanges = {
   '1M': DATA_ALL.slice(-30),
   '3M': DATA_ALL.slice(-90),
   '6M': DATA_ALL.slice(-180),
-  '1Y': DATA_ALL.slice(-365, -365 + 200), // let's pretend that this is right
-  '2Y': DATA_ALL.slice(-365 * 2, -365 * 2 + 200),
+  '1ÅR': DATA_ALL.slice(-365, -365 + 200), // let's pretend that this is right
+  '2ÅR': DATA_ALL.slice(-365 * 2, -365 * 2 + 200),
 } as const
 
 export type DataRangeKeys = keyof typeof dataRanges
