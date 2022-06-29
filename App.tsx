@@ -8,7 +8,9 @@ const DATA_ALL: number[] = [...new Array(yearsInvested * 365)].reduce((acc, _val
     return [10000]
   }
   const previousValue = acc[index - 1]
-  const value = Math.round(previousValue * 1.008 + (Math.random() - 0.5) * previousValue * 0.08)
+  const value = Math.round(
+    previousValue * (1.0 + 0.08 / 365) + (Math.random() - 0.5) * previousValue * 0.08
+  )
 
   return [...acc, value]
 }, [] as number[])
